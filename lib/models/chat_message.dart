@@ -1,8 +1,8 @@
-enum MessageType { user, ai }
-
 class ChatMessage {
-  final String text;
-  final MessageType type;
+  final String userMessage;
+  final String? aiResponse;
+  final String aiName;
+  final DateTime timestamp;
 
-  ChatMessage({required this.text, required this.type});
+  ChatMessage({required this.userMessage, this.aiResponse, required this.aiName, required this.timestamp});
 }

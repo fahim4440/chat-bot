@@ -23,6 +23,8 @@ class Authenticated extends AuthState {
 }
 
 class Unauthenticated extends AuthState {
+  final String error;
+  const Unauthenticated(this.error);
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [error];
 }

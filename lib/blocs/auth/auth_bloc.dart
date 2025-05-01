@@ -1,29 +1,25 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 
 import '../../models/user.dart';
-import '../../services/auth_services.dart';
+import '../../services/firebase_services.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final AuthService _authService;
-  AuthBloc(this._authService) : super(AuthInitial()) {
+  final FirebaseServices _firebaseServices;
+  AuthBloc(this._firebaseServices) : super(AuthInitial()) {
     on<GoogleSignInRequested>((event, emit) async {
       emit(AuthLoading());
       try {
-        final user = await _authService.signInWithGoogle();
+        final user = await _firebaseServices.signInWithGoogle();
         emit(Authenticated(user));
       } catch (e) {
-        print(e.toString());
-        emit(Unauthenticated());
+        debugPrint(e.toString());
+        emit(Unauthenticated(e.toString()));
       }
-    });
-
-    on<SignOutRequested>((event, emit) async {
-      await _authService.signOut();
-      emit(Unauthenticated());
     });
   }
 }

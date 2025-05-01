@@ -26,10 +26,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
@@ -54,9 +51,21 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAq_GTBndJRXRUl7dlGRfiIfxQ8WOI8uxA',
-    appId: '1:695089683644:android:16944dcbfebd6eeb2f44b9',
+    appId: '1:695089683644:android:5db27e2217e0cc202f44b9',
     messagingSenderId: '695089683644',
     projectId: 'chat-bot-8b93b',
     storageBucket: 'chat-bot-8b93b.firebasestorage.app',
   );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyDOdDPHNBatPPwp1N3YUZ6NpjPKL_1211w',
+    appId: '1:695089683644:ios:c237260d2d4de0d32f44b9',
+    messagingSenderId: '695089683644',
+    projectId: 'chat-bot-8b93b',
+    storageBucket: 'chat-bot-8b93b.firebasestorage.app',
+    androidClientId: '695089683644-2pr40lpknml8gdf4onmtlvh1ofq2ku4r.apps.googleusercontent.com',
+    iosClientId: '695089683644-jdv1chpdpblellu9f3k2vqnpifcotr4f.apps.googleusercontent.com',
+    iosBundleId: 'com.af.chatbot',
+  );
+
 }

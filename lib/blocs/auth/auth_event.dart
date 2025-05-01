@@ -8,8 +8,3 @@ class GoogleSignInRequested extends AuthEvent {
   @override
   List<Object?> get props => [];
 }
-
-class SignOutRequested extends AuthEvent {
-  @override
-  List<Object?> get props => [];
-}

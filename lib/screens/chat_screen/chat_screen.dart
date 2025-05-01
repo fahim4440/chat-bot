@@ -1,11 +1,18 @@
+import 'package:chat_bot/screens/profile_screen/profile_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lottie/lottie.dart';
 import '../../blocs/chat/chat_bloc.dart';
-import '../../models/chat_message.dart';
+import '../../widgets/banner_ad.dart';
+import '../../widgets/interstitial_ad.dart';
+import 'widgets/chats.dart';
+import 'widgets/messageField.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final String aiName;
+
+  const ChatScreen({super.key, required this.aiName});
 
   @override
   ChatScreenState createState() => ChatScreenState();
@@ -13,97 +20,116 @@ class ChatScreen extends StatefulWidget {
 
 class ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
+  late InterstitialAdWidget _interstitialAdWidget;
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<ChatBloc>().add(CheckAPIKey(aiName: widget.aiName));
+    context.read<ChatBloc>().add(LoadChatHistory(widget.aiName));
+    _interstitialAdWidget = InterstitialAdWidget(
+      adUnitId: 'ca-app-pub-7755526276291947/3530062762',
+      onAdShown: () => Navigator.pop(context),
+    );
+  }
+
+  @override
+  void dispose() {
+    _interstitialAdWidget.showAd();
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("AI Chat")),
-      body: Column(
-        children: [
-          Expanded(
-            child: BlocBuilder<ChatBloc, ChatState>(
-              builder: (context, state) {
-                if (state is ChatInitial) {
-                  return chats(state.messages);
-                }
-                if (state is AILoading) {
-                  return Stack(
-                    children: [
-                      chats(state.messages),
-                      Center(child: Lottie.asset("assets/lottie/typing.json", width: 200)),
-                    ],
-                  );
-                }
-                return const Center(child: Text("Loading"));
-              },
-            ),
-          ),
-          _buildInputField(context),
-        ],
+      bottomNavigationBar: const BannerAdWidget(),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Image.asset("assets/avatars/${widget.aiName}.png", width: 24, height: 24),
+            const SizedBox(width: 10,),
+            Text(widget.aiName),
+          ],
+        ),
+        backgroundColor: Colors.teal[900],
+        foregroundColor: Colors.white,
       ),
-    );
-  }
-
-  ListView chats(List<ChatMessage> messages) {
-    return ListView.builder(
-      reverse: true,
-      itemCount: messages.length,
-      itemBuilder: (context, index) {
-        final message = messages[messages.length - 1 - index];
-        return Align(
-          alignment: message.type == MessageType.user
-              ? Alignment.centerRight
-              : Alignment.centerLeft,
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: message.type == MessageType.user
-                  ? Colors.blueAccent
-                  : Colors.grey[300],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              message.text,
-              style: TextStyle(
-                color: message.type == MessageType.user
-                    ? Colors.white
-                    : Colors.black87,
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildInputField(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                hintText: "Type a message...",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
+      body: BlocListener<ChatBloc, ChatState>(
+        listener: (context, state) {
+          if (state is MissingApiKey) {
+            Future.delayed(Duration.zero, () {
+              showDialog(
+                barrierDismissible: false,
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text("API Key Required"),
+                  content:
+                      Text("Please add an API key in Profile Settings. To get api key please visit ${widget.aiName}'s website"),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ProfileScreen())
+                        );
+                      },
+                      child: const Text("Profile Settings"),
+                    ),
+                  ],
                 ),
+              );
+            });
+          }
+        },
+        child: Column(
+          children: [
+            Expanded(
+              child: BlocBuilder<ChatBloc, ChatState>(
+                builder: (context, state) {
+                  if (state is ChatLoading) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                  if (state is ChatLoaded) {
+                    return chats(state.messages);
+                  }
+                  if (state is ErrorState) {
+                    SchedulerBinding.instance.addPostFrameCallback((_) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(state.errorMessage),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    });
+                    return chats(state.messages);
+                  }
+                  if (state is AILoading) {
+                    return Stack(
+                      children: [
+                        chats(state.messages),
+                        Center(
+                            child: Lottie.asset("assets/lottie/typing.json",
+                                width: 200)),
+                      ],
+                    );
+                  }
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                },
               ),
             ),
-          ),
-          const SizedBox(width: 10),
-          FloatingActionButton(
-            onPressed: () {
-              if (_controller.text.isNotEmpty) {
-                context.read<ChatBloc>().add(SendMessage(_controller.text));
-                _controller.clear();
-              }
-            },
-            child: const Icon(Icons.send),
-          ),
-        ],
+            messageField(
+                context: context,
+                controller: _controller,
+                aiName: widget.aiName)
+          ],
+        ),
       ),
     );
   }
